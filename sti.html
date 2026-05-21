@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STI Food System - Admin & Student Sync</title>
+
+<style>
+/* THEME & BACKGROUND - Modernized Dark Food Theme */
+body {
+    font-family: 'Poppins', Arial, sans-serif;
+    margin: 0;
+    background-color: #0B132B; 
+    background-image: radial-gradient(circle at top right, #1C2541, #0B132B);
+    color: #F4F5F7;
+    overflow-x: hidden;
+}
+
+/* STATUS BADGE */
+.status-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+}
+.open { 
+    background: rgba(46, 196, 182, 0.15); 
+    color: #2EC4B6; 
+    border: 1px solid rgba(46, 196, 182, 0.3); 
+}
+.closed { 
+    background: rgba(231, 76, 60, 0.15); 
+    color: #E74C3C; 
+    border: 1px solid rgba(231, 76, 60, 0.3); 
+}
+
+/* MODAL / POPUP */
+#confirmModal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(5, 10, 20, 0.85); backdrop-filter: blur(12px);
+    display: none; justify-content: center; align-items: center; z-index: 10000;
+}
+.modal-content {
+    background: #1C2541; padding: 35px; border-radius: 24px; border: 1px solid rgba(255, 159, 28, 0.3);
+    width: 350px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+}
+
+/* AUTH OVERLAY */
+#authOverlay {
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background: #0B132B;
+    display:flex; justify-content:center; align-items:center; z-index:9999;
+}
+.auth-card {
+    background: #1C2541; padding: 50px 40px;
+    border-radius: 24px; width: 380px; text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+}
+.auth-card input {
+    width: 90%; padding: 14px; margin: 12px 0; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none;
+    transition: 0.3s;
+}
+.auth-card input:focus {
+    border-color: #FF9F1C;
+    background: rgba(255,255,255,0.08);
+}
+.auth-card button {
+    background: #FF9F1C; border: none; padding: 15px; border-radius: 12px;
+    font-weight: 700; cursor: pointer; width: 100%; margin-top: 15px; color: #0B132B;
+    transition: 0.3s;
+    letter-spacing: 1px;
+}
+.auth-card button:hover { background: #ffb03a; transform: translateY(-2px); }
+
+/* NAVBAR */
+.navbar { display: flex; justify-content: space-between; align-items: center; padding: 25px 80px; background: rgba(11, 19, 43, 0.7); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 999; }
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo img { width: 40px; border-radius: 8px; }
+.logo span { color: #FF9F1C; font-weight: 800; font-size: 1.3rem; letter-spacing: 0.5px; }
+
+.navbar button {
+    background: transparent; border: none; color: #A5AEC4; margin-left: 10px;
+    padding: 10px 22px; border-radius: 50px; cursor: pointer; font-size: 14px; font-weight: 600;
+    transition: 0.3s;
+}
+.navbar button:hover { background: rgba(255, 159, 28, 0.1); color: #FF9F1C; }
+
+/* SECTIONS */
+.section { display: none; padding: 40px 10%; min-height: 80vh; animation: fadeIn 0.4s ease-out; }
+.section h2 { font-weight: 800; letter-spacing: 1px; color: #FFF; margin-bottom: 30px; font-size: 1.8rem; }
+.active { display: block; }
+@keyframes fadeIn { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: translateY(0);} }
+
+/* HERO SECTION */
+.hero-flex { display: flex; align-items: center; justify-content: space-between; min-height: 65vh; gap: 40px; }
+.hero-image img {
+    width: 500px; border-radius: 50%; 
+    filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.5));
+    transition: transform 0.5s ease;
+}
+.hero-image img:hover {
+    transform: rotate(5deg) scale(1.02);
+}
+
+/* PRODUCTS GRID & CARDS */
+.products { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; margin-top: 30px;}
+.card {
+    background: #1C2541; padding: 25px; border-radius: 24px;
+    text-align: center; border: 1px solid rgba(255,255,255,0.03); transition: 0.3s ease;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+.card:hover { border-color: rgba(255, 159, 28, 0.4); transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.3); }
+.card h4 { margin: 15px 0 5px 0; font-size: 1.15rem; font-weight: 600; }
+.card p { color: #FF9F1C; font-weight: 700; font-size: 1.1rem; margin: 5px 0 15px 0; }
+.card img { width: 150px; height: 150px; object-fit: cover; border-radius: 50%; border: 4px solid #1C2541; box-shadow: 0 8px 15px rgba(0,0,0,0.3); margin-bottom: 10px; }
+.qty-btn { width: 40px; height: 40px; margin: 5px; background: #FF9F1C; border: none; font-weight: bold; font-size: 16px; border-radius: 50%; cursor: pointer; color: #0B132B; transition: 0.2s; }
+.qty-btn:hover { background: #ffb03a; transform: scale(1.1); }
+
+/* CART & BOXES */
+.box-container { max-width: 600px; margin: auto; background: #1C2541; padding: 30px; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.03); margin-bottom: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+.cart-item { display: flex; justify-content: space-between; margin: 12px 0; background: #0B132B; padding: 15px; border-radius: 14px; font-weight: 500; }
+
+/* ADMIN TABLE STYLING */
+.admin-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; color: #E4E7EB; background: #1C2541; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+.admin-table th { text-align: left; padding: 18px; background: rgba(255, 159, 28, 0.08); color: #FF9F1C; font-weight: 600; border-bottom: 2px solid #0B132B; }
+.admin-table td { padding: 18px; border-bottom: 1px solid #0B132B; }
+
+/* BUTTONS */
+.order-now-btn { background: #FF9F1C; color: #0B132B; padding: 16px 40px; border: none; border-radius: 50px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.3s; letter-spacing: 0.5px; box-shadow: 0 8px 20px rgba(255, 159, 28, 0.2); }
+.order-now-btn:hover { background: #ffb03a; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(255, 159, 28, 0.3); }
+.admin-ready-btn { background: #2EC4B6; color: #0B132B; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.admin-ready-btn:hover { background: #3bdfcf; }
+.admin-delete-btn { background: #E74C3C; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; margin-left: 5px; transition: 0.2s; }
+.admin-delete-btn:hover { background: #ff5c4d; }
+</style>
+</head>
+<body>
+
+<audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+<div id="confirmModal">
+    <div class="modal-content">
+        <h2 style="color:#FF9F1C; margin-top:0;">Confirm Order?</h2>
+        <div id="confirmSummary" style="text-align: left; font-size: 14px; margin: 20px 0; background: #0B132B; padding: 15px; border-radius: 10px;"></div>
+        <button onclick="finalSubmit()" class="order-now-btn" style="width:100%; margin-bottom: 10px;">YES, ORDER</button>
+        <button onclick="closeModal()" style="width:100%; background:transparent; border:1px solid #444; color:white; padding:10px; border-radius:50px; cursor:pointer;">Cancel</button>
+    </div>
+</div>
+
+<div id="authOverlay">
+    <div class="auth-card">
+        <h2 style="color:white; margin-top: 0;">LINGAPKAIN <span style="color:#FF9F1C">Log in</span></h2>
+        <input type="text" id="loginUser" placeholder="Student No.">
+        <input type="password" id="loginPass" placeholder="Password">
+        <button onclick="login()">LOGIN</button>
+    </div>
+</div>
+
+<div class="navbar">
+    <div class="logo"><img src="logo.jpg" onerror="this.src='https://via.placeholder.com/40'"><span>LINGAPKAIN MENU</span></div>
+    <div>
+        <button onclick="show('home')">Home</button>
+        <button onclick="show('breakfast')">Breakfast</button>
+        <button onclick="show('lunch')">Lunch</button>
+        <button onclick="show('drinks')">Drinks</button>
+        <button onclick="show('cart')">Cart & Status</button>
+        <button id="adminBtn" onclick="show('admin')" style="display:none; color:#FF9F1C;">Admin Panel</button>
+    </div>
+</div>
+
+<div id="home" class="section active">
+    <div class="hero-flex">
+        <div class="hero-content">
+            <div id="canteenStatus" class="status-badge">Checking Status...</div>
+            <h1 style="font-size: 3rem; line-height: 1.2; color: #FF9F1C; margin: 0; font-weight: 800;"> LingapKain <br>
+                <span style="font-size: 1.3rem; font-weight: normal; color: #A5AEC4; display: block; margin-top: 5px;">-No Line, Just Dine-</span>
+            </h1>
+            <p style="color:#6B7A99; margin-top:15px; font-size: 14px;">Open from 7:00 AM to 5:00 PM</p>
+            <button id="mainOrderBtn" class="order-now-btn" style="margin-top:20px;" onclick="show('lunch')">Order Now</button>
+        </div>
+        <div class="hero-image"><img src="logo2.png" onerror="this.src='https://via.placeholder.com/400'"></div>
+    </div>
+</div>
+
+<div id="breakfast" class="section"><h2>BREAKFAST</h2><div id="bList" class="products"></div></div>
+<div id="lunch" class="section"><h2>LUNCH</h2><div id="lList" class="products"></div></div>
+<div id="drinks" class="section"><h2>DRINKS</h2><div id="drinksList" class="products"></div></div>
+
+<div id="cart" class="section">
+    <div class="box-container">
+        <h2>YOUR <span style="color:#FF9F1C">CART</span></h2>
+        <div id="cartItems"></div>
+        <h3 style="text-align:right; font-size: 1.4rem;">Total: <span style="color:#FF9F1C;">₱<span id="total">0</span></span></h3>
+        <button id="placeOrderBtn" class="order-now-btn" style="width:100%" onclick="openConfirm()">Place Order</button>
+    </div>
+
+    <div class="box-container" style="border-color: rgba(255,255,255,0.05);">
+        <h2 style="font-size:1.2rem;">MY <span style="color:#FF9F1C">ORDER TRACKER</span></h2>
+        <div id="myOrdersList"></div>
+    </div>
+</div>
+
+<div id="admin" class="section">
+    <h2>ADMIN DASHBOARD</h2>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Student</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="adminOrders"></tbody>
+    </table>
+</div>
+
+<script>
+let currentUser = "";
+let cart = [];
+let orders = JSON.parse(localStorage.getItem('sti_orders')) || [];
+
+const breakfast = [["Tocilog", 50, "images/tocilog.jpg"],["Longsilog", 50, "images/longsilog.webp"],["Hotsilog", 50, "images/hotsilog.jpg"],["Omelette", 30, "images/omelette.jpg"],["Macaroni", 30, "images/macaroni.webp"]];
+const lunch = [["Pork adobo with rice", 100, "images/porkadobo.webp"],["Menudo with rice", 100, "images/menudo.webp"],["Giniling with rice", 100, "images/giniling.jpg"],["Tocino with rice", 100, "images/tocino.webp"],["Ham and egg", 100, "images/ham and egg.jpg"],["Siomai with rice", 50, "images/siomai rice.jpg"]];
+const drinks = [["Coke", 25, "images/coke.webp"],["Mountaindew", 25, "images/mountaindew.jpg"],["Sprite", 25, "images/sprite.webp"],["Royal", 25, "images/royal.webp"],["C2", 25, "images/c2.jpg"],["Water", 20, "images/water.webp"],["Iced Americano", 70, "images/iced americano.jpg"],["Iced Latte", 20, "images/iced latte.jpg"]];
+
+function updateCanteenTime() {
+    const now = new Date();
+    const hours = now.getHours();
+    const statusDiv = document.getElementById('canteenStatus');
+    const orderBtn = document.getElementById('mainOrderBtn');
+    const cartOrderBtn = document.getElementById('placeOrderBtn');
+    const isOpen = hours >= 7 && hours < 17;
+
+    if (isOpen) {
+        statusDiv.innerHTML = "● CANTEEN IS OPEN";
+        statusDiv.className = "status-badge open";
+        orderBtn.disabled = false;
+        orderBtn.style.opacity = "1";
+    } else {
+        statusDiv.innerHTML = "● CANTEEN IS CLOSED";
+        statusDiv.className = "status-badge closed";
+        orderBtn.disabled = true;
+        orderBtn.style.opacity = "0.5";
+        if(cartOrderBtn) cartOrderBtn.disabled = true;
+    }
+}
+
+function login(){
+    let u=document.getElementById("loginUser").value;
+    if(!u) return alert("Enter Student No.");
+    currentUser = u;
+    document.getElementById("authOverlay").style.display="none";
+    if(u==="admin") document.getElementById("adminBtn").style.display="inline-block";
+    load(breakfast,"bList"); load(lunch,"lList"); load(drinks,"drinksList"); 
+    loadAdmin(); loadStudentOrders();
+    updateCanteenTime();
+}
+
+function show(id){
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if(id === 'cart' || id === 'admin') { loadAdmin(); loadStudentOrders(); }
+}
+
+function load(list, id){
+    let html="";
+    list.forEach(item=>{
+        html+=`<div class="card"><img src="${item[2]}" onerror="this.src='https://via.placeholder.com/150'"><h4>${item[0]}</h4><p>₱${item[1]}</p><p id="qty-${item[0]}">Qty: 0</p><div><button class="qty-btn" onclick="qty('${item[0]}',${item[1]},1)">+</button><button class="qty-btn" onclick="qty('${item[0]}',${item[1]},-1)" style="background:#0B132B; color:white; border: 1px solid rgba(255,255,255,0.1);">-</button></div></div>`;
+    });
+    document.getElementById(id).innerHTML=html;
+}
+
+function qty(name, price, val){
+    let item=cart.find(i=>i.name===name);
+    if(item){ item.qty+=val; if(item.qty<=0) cart=cart.filter(i=>i.name!==name); }
+    else if(val>0){ cart.push({name, price, qty:1}); }
+    updateUI();
+}
+
+function updateUI(){
+    let total=0;
+    document.querySelectorAll("[id^='qty-']").forEach(el=>el.textContent="Qty: 0");
+    let html="";
+    cart.forEach((item)=>{
+        total += item.price*item.qty;
+        let el=document.getElementById("qty-"+item.name);
+        if(el) el.textContent="Qty: "+item.qty;
+        html+=`<div class="cart-item"><span>${item.name} x${item.qty}</span> <span>₱${item.price*item.qty}</span></div>`;
+    });
+    document.getElementById("cartItems").innerHTML=html || "Empty Cart";
+    document.getElementById("total").textContent=total;
+}
+
+function openConfirm(){
+    if(cart.length==0) return alert("Select food!");
+    document.getElementById("confirmSummary").innerHTML = `Items: ${cart.map(i=>i.name).join(", ")}<br>Total: ₱${document.getElementById("total").textContent}`;
+    document.getElementById("confirmModal").style.display = "flex";
+}
+function closeModal(){ document.getElementById("confirmModal").style.display = "none"; }
+
+function finalSubmit(){
+    let order = { id: (Math.floor(Math.random()*900)+100), user: currentUser, items: [...cart], total: document.getElementById("total").textContent, status: "Pending", notified: false };
+    orders.push(order); localStorage.setItem('sti_orders', JSON.stringify(orders));
+    cart=[]; updateUI(); closeModal(); loadStudentOrders(); loadAdmin();
+}
+
+function loadStudentOrders(){
+    let myOrders = orders.filter(o => o.user === currentUser);
+    let html = "";
+    if(myOrders.length === 0) html = "<p style='color:#666;'>No active orders.</p>";
+    else {
+        myOrders.forEach(o => {
+            let isReady = o.status === "Ready";
+            let color = isReady ? "#2EC4B6" : "#FF9F1C"; 
+            if(isReady && o.notified === false) { document.getElementById('notifSound').play(); o.notified = true; localStorage.setItem('sti_orders', JSON.stringify(orders)); }
+            html += `<div style="background:#0B132B; padding:15px; border-radius:12px; border: 1px solid ${color}; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between;"><b>Order #${o.id}</b><span style="color:${color}; font-size:11px; font-weight:bold;">${isReady ? "READY" : "PREPARING"}</span></div>
+                <div style="font-size:12px; color:#A5AEC4; margin-top: 5px;">${o.items.map(i=>i.name+" x"+i.qty).join(", ")}</div>
+            </div>`;
+        });
+    }
+    document.getElementById("myOrdersList").innerHTML = html;
+}
+
+function loadAdmin(){
+    let html="";
+    orders.slice().reverse().forEach((o)=>{
+        let realIdx = orders.indexOf(o);
+        let isReady = o.status === "Ready";  
+        html+=`<tr>
+            <td>${o.id}</td>
+            <td>${o.user}</td>
+            <td>${o.items.map(it=>it.name+" x"+it.qty).join(", ")}</td>
+            <td>₱${o.total}</td>
+            <td style="color:${isReady ? '#2EC4B6' : '#FF9F1C'}; font-weight:bold;">${o.status}</td>
+            <td>
+                ${!isReady ? `<button class="admin-ready-btn" onclick="updateStatus(${realIdx})">Ready</button>` : ''}
+                <button class="admin-delete-btn" onclick="deleteOrder(${realIdx})">X</button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById("adminOrders").innerHTML=html;
+}
+
+function updateStatus(idx){ orders[idx].status="Ready"; localStorage.setItem('sti_orders', JSON.stringify(orders)); loadAdmin(); loadStudentOrders(); }
+function deleteOrder(idx){ orders.splice(idx,1); localStorage.setItem('sti_orders', JSON.stringify(orders)); loadAdmin(); loadStudentOrders(); }
+
+setInterval(updateCanteenTime, 60000);
+updateCanteenTime();
+</script>
+</body>
+</html>
